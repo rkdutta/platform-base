@@ -1,0 +1,14 @@
+# Terraform working directory (.terraform.lock.hcl is intentionally committed)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Variable files that may contain local overrides / secrets
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# Generated kubeconfig
+kubeconfig
