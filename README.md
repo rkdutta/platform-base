@@ -41,6 +41,22 @@ kubectl -n argocd port-forward svc/argocd-server 8081:443
 
 The `terraform output` values `argocd_admin_password_cmd` and `argocd_port_forward_cmd` print these commands.
 
+### Argo Rollouts
+
+Argo Rollouts (progressive delivery: canary / blue-green) is installed via its
+Helm chart (toggle with `argo_rollouts_enabled`). The controller runs in the
+`argocd` namespace:
+
+```sh
+kubectl -n argocd get pods -l app.kubernetes.io/name=argo-rollouts
+```
+
+Manage `Rollout` resources with the kubectl plugin (installed separately):
+
+```sh
+kubectl argo rollouts dashboard   # UI at http://localhost:3100
+```
+
 Tear it down:
 
 ```sh
@@ -61,7 +77,10 @@ Override defaults with a `terraform.tfvars` file (see `example.tfvars`):
 | `ingress_https_host_port` | `8443`     | Host port mapped to container port 443 (HTTPS ingress).                        |
 | `argocd_enabled`     | `true`          | Install Argo CD via its Helm chart.                                            |
 | `argocd_namespace`   | `argocd`        | Namespace Argo CD is installed into.                                           |
-| `argocd_chart_version` | `""` (latest) | Version of the `argo-cd` Helm chart to install.                               |
+| `argocd_chart_version` | `10.1.3`      | Version of the `argo-cd` Helm chart to install.                               |
+| `argo_rollouts_enabled` | `true`       | Install Argo Rollouts via its Helm chart.                                     |
+| `argo_rollouts_namespace` | `argocd`     | Namespace Argo Rollouts is installed into.                                     |
+| `argo_rollouts_chart_version` | `2.41.0` | Version of the `argo-rollouts` Helm chart to install.                         |
 | `kubeconfig_path`    | `./kubeconfig`  | Where the generated kubeconfig is written.                                     |
 
 ## Releases
@@ -79,6 +98,7 @@ publishes a GitHub Release from the matching changelog section.
 - `variables.tf` — input variables
 - `main.tf` — the `kind_cluster` resource
 - `argocd.tf` — Argo CD Helm release
+- `rollouts.tf` — Argo Rollouts Helm release
 - `outputs.tf` — cluster name, endpoint, kubeconfig path, kubectl context, Argo CD helpers
 - `CHANGELOG.md` / `RELEASING.md` — release notes and release process
 - `.github/workflows/` — `ci.yml` (validate) and `release.yml` (publish releases)

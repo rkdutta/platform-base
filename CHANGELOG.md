@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Argo Rollouts (progressive delivery controller) installed via its Helm chart,
+  pinned to chart `2.41.0` (app `v1.9.0`). Toggle with `argo_rollouts_enabled`.
+
 ## [0.1.0] - 2026-07-10
 
 ### Added

@@ -57,6 +57,24 @@ variable "argocd_chart_version" {
   default     = "10.1.3"
 }
 
+variable "argo_rollouts_enabled" {
+  description = "Install Argo Rollouts (progressive delivery controller) into the cluster."
+  type        = bool
+  default     = true
+}
+
+variable "argo_rollouts_namespace" {
+  description = "Namespace Argo Rollouts is installed into."
+  type        = string
+  default     = "argocd"
+}
+
+variable "argo_rollouts_chart_version" {
+  description = "Version of the argo-rollouts Helm chart. Pinned for reproducible releases; empty string installs the latest available version."
+  type        = string
+  default     = "2.41.0"
+}
+
 variable "kubeconfig_path" {
   description = "Path where the generated kubeconfig is written."
   type        = string

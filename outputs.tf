@@ -32,3 +32,8 @@ output "argocd_port_forward_cmd" {
   description = "Command to expose the Argo CD UI locally on https://localhost:8081."
   value       = "kubectl -n ${var.argocd_namespace} port-forward svc/argocd-server 8081:443"
 }
+
+output "argo_rollouts_namespace" {
+  description = "Namespace Argo Rollouts is installed into (null when disabled)."
+  value       = var.argo_rollouts_enabled ? var.argo_rollouts_namespace : null
+}
