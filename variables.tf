@@ -13,7 +13,7 @@ variable "kubernetes_version" {
 variable "worker_count" {
   description = "Number of worker nodes to create in addition to the control-plane node."
   type        = number
-  default     = 2
+  default     = 1
 
   validation {
     condition     = var.worker_count >= 0
