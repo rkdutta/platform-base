@@ -37,3 +37,8 @@ output "argo_rollouts_namespace" {
   description = "Namespace Argo Rollouts is installed into (null when disabled)."
   value       = var.argo_rollouts_enabled ? var.argo_rollouts_namespace : null
 }
+
+output "local_registry" {
+  description = "Host address of the local registry (null when disabled). Tag and push images here."
+  value       = var.local_registry_enabled ? "localhost:${var.local_registry_port}" : null
+}

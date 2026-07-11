@@ -75,6 +75,36 @@ variable "argo_rollouts_chart_version" {
   default     = "2.41.0"
 }
 
+variable "local_registry_enabled" {
+  description = "Run a local OCI registry container and wire the cluster to it (https://kind.sigs.k8s.io/docs/user/local-registry/)."
+  type        = bool
+  default     = true
+}
+
+variable "docker_host" {
+  description = "Docker daemon socket for the docker provider. Needed because the provider ignores docker contexts and only honours DOCKER_HOST/this. Leave empty to use DOCKER_HOST or the default socket; on colima set e.g. unix:///Users/<you>/.colima/default/docker.sock."
+  type        = string
+  default     = "unix:///Users/rdutta/.colima/default/docker.sock"
+}
+
+variable "local_registry_name" {
+  description = "Name of the registry container. Also its DNS name on the kind docker network, so cluster nodes reach it at http://<name>:5000."
+  type        = string
+  default     = "kind-registry"
+}
+
+variable "local_registry_port" {
+  description = "Host port the registry is published on. Push images to localhost:<port> and reference them from manifests the same way."
+  type        = number
+  default     = 5001
+}
+
+variable "local_registry_image" {
+  description = "Registry container image. Pinned for reproducibility."
+  type        = string
+  default     = "registry:2.8.3"
+}
+
 variable "kubeconfig_path" {
   description = "Path where the generated kubeconfig is written."
   type        = string

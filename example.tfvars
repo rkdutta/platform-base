@@ -15,3 +15,9 @@ argo_rollouts_enabled       = true
 argo_rollouts_namespace     = "argocd"
 argo_rollouts_chart_version = "2.41.0" # pinned; "" = latest
 kubeconfig_path             = "./kubeconfig"
+
+# Local container registry (https://kind.sigs.k8s.io/docs/user/local-registry/).
+local_registry_enabled = true
+local_registry_port    = 5001
+# The docker provider ignores docker contexts. On colima, point it at the socket:
+docker_host = "unix:///Users/rdutta/.colima/default/docker.sock"

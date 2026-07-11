@@ -8,6 +8,16 @@ resource "kind_cluster" "this" {
     kind        = "Cluster"
     api_version = "kind.x-k8s.io/v1alpha4"
 
+    # Point containerd at the local registry: images tagged
+    # localhost:<port>/... are pulled from the kind-registry container over the
+    # shared "kind" docker network. See registry.tf.
+    containerd_config_patches = var.local_registry_enabled ? [
+      <<-EOT
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${var.local_registry_port}"]
+        endpoint = ["http://${var.local_registry_name}:5000"]
+      EOT
+    ] : []
+
     # Control-plane node.
     node {
       role = "control-plane"
