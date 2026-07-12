@@ -57,6 +57,18 @@ variable "argocd_chart_version" {
   default     = "10.1.3"
 }
 
+variable "argocd_ingress_enabled" {
+  description = "Create an Ingress exposing the Argo CD server UI via ingress-nginx."
+  type        = bool
+  default     = true
+}
+
+variable "argocd_ingress_host" {
+  description = "Hostname for the Argo CD UI Ingress. Reachable on the ingress HTTP host port, e.g. http://argocd.127.0.0.1.sslip.io:8080."
+  type        = string
+  default     = "argocd.127.0.0.1.sslip.io"
+}
+
 variable "argo_rollouts_enabled" {
   description = "Install Argo Rollouts (progressive delivery controller) into the cluster."
   type        = bool

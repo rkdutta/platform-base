@@ -33,6 +33,11 @@ output "argocd_port_forward_cmd" {
   value       = "kubectl -n ${var.argocd_namespace} port-forward svc/argocd-server 8081:443"
 }
 
+output "argocd_ui_url" {
+  description = "URL of the Argo CD UI via ingress (null when Argo CD or its ingress is disabled)."
+  value       = var.argocd_enabled && var.argocd_ingress_enabled ? "http://${var.argocd_ingress_host}:${var.ingress_http_host_port}" : null
+}
+
 output "argo_rollouts_namespace" {
   description = "Namespace Argo Rollouts is installed into (null when disabled)."
   value       = var.argo_rollouts_enabled ? var.argo_rollouts_namespace : null
