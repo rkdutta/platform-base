@@ -87,6 +87,24 @@ variable "argo_rollouts_chart_version" {
   default     = "2.41.0"
 }
 
+variable "argo_rollouts_dashboard_enabled" {
+  description = "Enable the Argo Rollouts dashboard (web UI) in the argo-rollouts Helm release."
+  type        = bool
+  default     = true
+}
+
+variable "argo_rollouts_dashboard_ingress_enabled" {
+  description = "Create an Ingress exposing the Argo Rollouts dashboard via ingress-nginx."
+  type        = bool
+  default     = true
+}
+
+variable "argo_rollouts_dashboard_ingress_host" {
+  description = "Hostname for the Argo Rollouts dashboard Ingress. Reachable on the ingress HTTP host port, e.g. http://rollouts.127.0.0.1.sslip.io:8080."
+  type        = string
+  default     = "rollouts.127.0.0.1.sslip.io"
+}
+
 variable "local_registry_enabled" {
   description = "Run a local OCI registry container and wire the cluster to it (https://kind.sigs.k8s.io/docs/user/local-registry/)."
   type        = bool

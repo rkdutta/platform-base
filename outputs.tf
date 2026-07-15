@@ -43,6 +43,11 @@ output "argo_rollouts_namespace" {
   value       = var.argo_rollouts_enabled ? var.argo_rollouts_namespace : null
 }
 
+output "argo_rollouts_dashboard_url" {
+  description = "URL of the Argo Rollouts dashboard via ingress (null when the dashboard or its ingress is disabled)."
+  value       = var.argo_rollouts_enabled && var.argo_rollouts_dashboard_enabled && var.argo_rollouts_dashboard_ingress_enabled ? "http://${var.argo_rollouts_dashboard_ingress_host}:${var.ingress_http_host_port}" : null
+}
+
 output "local_registry" {
   description = "Host address of the local registry (null when disabled). Tag and push images here."
   value       = var.local_registry_enabled ? "localhost:${var.local_registry_port}" : null
