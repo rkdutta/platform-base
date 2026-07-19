@@ -20,6 +20,16 @@ resource "helm_release" "argocd" {
       params = {
         "server.insecure" = true
       }
+      # How often the application-controller re-checks git and reconciles each
+      # Application (argocd-cm `timeout.reconciliation`). Default is 180s, which
+      # meant a merged image-bump PR took up to 3 min to deploy. 30s makes merged
+      # Renovate bumps roll out in seconds. (A git webhook would be instant, but
+      # GitHub can't reach this local kind cluster, so a short poll is the lever.)
+      # NOTE: the controller reads this at startup — after `terraform apply`,
+      # restart it: kubectl -n argocd rollout restart statefulset argocd-application-controller
+      cm = {
+        "timeout.reconciliation" = "30s"
+      }
     }
   })]
 
