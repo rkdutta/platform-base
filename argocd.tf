@@ -65,8 +65,15 @@ locals {
         # argocd-secret at read time, never written into this ConfigMap or
         # Terraform state as plaintext. The key must match what's set in
         # configs.secret.extra below.
-        clientSecret    = "$argocd-secret:oidc.keycloak.clientSecret"
-        requestedScopes = ["openid", "profile", "email", "groups"]
+        clientSecret = "$argocd-secret:oidc.keycloak.clientSecret"
+        # "groups" is deliberately NOT requested here - it isn't a real
+        # scope (no Keycloak client scope named "groups" exists in this
+        # realm), and requesting it fails with invalid_scope. The groups
+        # claim still lands in the token regardless, via the protocol
+        # mapper attached directly to the "argocd" client (same pattern as
+        # teams-ui/teams-cli) - RBAC's own configs.rbac.scopes (defaults to
+        # "[groups]") reads that claim, unrelated to what's requested here.
+        requestedScopes = ["openid", "profile", "email"]
         # platform-tls is self-signed; without this argocd-server rejects
         # the connection ("x509: certificate signed by unknown authority").
         # Read live rather than pasted in, so a cert rotation doesn't leave
