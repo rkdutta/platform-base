@@ -69,6 +69,38 @@ variable "argocd_ingress_host" {
   default     = "argocd.127.0.0.1.sslip.io"
 }
 
+variable "argocd_oidc_enabled" {
+  description = "Configure Argo CD SSO against the platform's Keycloak (\"teams\" realm) via native OIDC (not Dex - there's exactly one IdP here, so the extra hop buys nothing)."
+  type        = bool
+  default     = true
+}
+
+variable "argocd_oidc_issuer_url" {
+  description = "Keycloak \"teams\" realm issuer URL. Must match the `iss` claim Keycloak actually puts in its tokens (see apps/security/keycloak's --hostname flag in platform-infra)."
+  type        = string
+  default     = "https://platform-auth.127.0.0.1.sslip.io:8443/auth/realms/teams"
+}
+
+variable "argocd_oidc_client_secret" {
+  description = <<-EOT
+    Client secret for the "argocd" Keycloak client. Must match the `secret` field of the
+    "argocd" client entry in platform-infra/apps/security/keycloak/application.yaml's
+    teams-realm.json - the two are deployed by entirely separate mechanisms (this
+    Terraform vs. Argo CD's own Helm release of Keycloak), so nothing keeps them in sync
+    automatically. DEMO value, matching this repo's existing teams-api-sa client secret
+    convention - rotate for real use.
+  EOT
+  type        = string
+  default     = "dev-argocd-oidc-secret-change-me"
+  sensitive   = true
+}
+
+variable "argocd_admin_group" {
+  description = "Keycloak group (in the \"teams\" realm) whose members get Argo CD's admin role. Deliberately a group, not the existing \"admin\" realm role - Argo CD's OIDC RBAC only matches the `groups` token claim, not realm_access.roles, so this can't just reuse that role directly (see argocd.tf)."
+  type        = string
+  default     = "argocd-admins"
+}
+
 variable "argo_rollouts_enabled" {
   description = "Install Argo Rollouts (progressive delivery controller) into the cluster."
   type        = bool
