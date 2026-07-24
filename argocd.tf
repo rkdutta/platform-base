@@ -46,6 +46,15 @@ locals {
       # NOTE: the controller reads this at startup — after `terraform apply`,
       # restart it: kubectl -n argocd rollout restart statefulset argocd-application-controller
       "timeout.reconciliation" = "30s"
+      # The chart's own default ("https://argocd.example.com") was never
+      # overridden - Argo CD builds its OAuth redirect_uri as "<url>/auth/
+      # callback", so it was sending that placeholder straight to Keycloak
+      # ("Invalid redirect URL", since it obviously doesn't match what's
+      # registered on the "argocd" client). Must exactly match
+      # var.argocd_ingress_host's scheme+host+port, which is also what the
+      # Keycloak client's redirectUris/webOrigins are registered against
+      # (platform-infra/apps/security/keycloak/application.yaml).
+      "url" = "http://${var.argocd_ingress_host}:${var.ingress_http_host_port}"
     },
     var.argocd_oidc_enabled ? {
       "oidc.config" = yamlencode({
