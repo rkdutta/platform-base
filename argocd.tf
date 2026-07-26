@@ -93,6 +93,20 @@ locals {
         # argocd_oidc_enabled=false for that first apply, then true on a
         # second one once platform-tls exists.
         rootCA = data.kubernetes_secret_v1.platform_tls[0].data["tls.crt"]
+        # Without this, Argo CD's own logout only clears its local session -
+        # the Keycloak SSO session (KEYCLOAK_SESSION cookie) stays alive, so
+        # logging back in silently re-authenticates via SSO with no password
+        # prompt. logoutURL makes Argo CD redirect to Keycloak's RP-initiated
+        # logout (end_session) endpoint on the way out, ending that session
+        # too. {{token}}/{{logoutRedirectURL}} are Argo CD's own template
+        # placeholders (id_token from the session, and its own base `url`
+        # above, respectively) - not Terraform interpolation, hence the
+        # single-quote-free literal braces surviving yamlencode as-is.
+        # post_logout_redirect_uri must be pre-registered on the "argocd"
+        # Keycloak client's post.logout.redirect.uris attribute (platform-
+        # infra/apps/security/keycloak/application.yaml) or Keycloak rejects
+        # the redirect after logout.
+        logoutURL = "${var.argocd_oidc_issuer_url}/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}"
       })
     } : {}
   )
