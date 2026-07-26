@@ -22,6 +22,15 @@
 # small additional Service (same pod selector as ingress-nginx-controller's
 # own Service, just also exposing :8443) - see
 # platform-infra/apps/security/keycloak/application.yaml's extraManifests.
+#
+# RBAC ownership: once OIDC is on, argocd-rbac-cm is deliberately NOT owned
+# by this Helm release (configs.rbac.create=false below) - it's owned by
+# Terraform (kubernetes_config_map.argocd_rbac, static baseline only) with
+# teams-operator as the sole runtime writer of everything else (per-project
+# viewer/maintainer policy blocks). Argo CD hot-reloads this ConfigMap via
+# an informer watch - no restart needed, unlike timeout.reconciliation
+# above - so that split is safe. See kubernetes_config_map.argocd_rbac's own
+# comment for why this doesn't race with the chart on the cutover apply.
 
 # count (not a plain read) so this is skipped entirely when OIDC is off -
 # on a from-scratch cluster this secret doesn't exist until well after the
@@ -93,11 +102,16 @@ locals {
   } : {}
 
   argocd_rbac_config = var.argocd_oidc_enabled ? {
-    # Everyone who can log in (any "teams" realm user) gets read-only by
-    # default; only var.argocd_admin_group members get full admin. Revisit
-    # if "logged in => at least read-only" turns out to be too permissive.
-    "policy.csv"     = "g, ${var.argocd_admin_group}, role:admin\n"
-    "policy.default" = "role:readonly"
+    # Hand ownership of argocd-rbac-cm's *content* to Terraform + teams-operator
+    # (see kubernetes_config_map.argocd_rbac below) instead of this chart -
+    # "it is expected the configmap will be created by something else" per the
+    # chart's own docs. Previously this block set policy.csv/policy.default
+    # directly here, which meant *every* logged-in user got Argo CD's built-in
+    # role:readonly by default (read access to */* - every project, cluster-
+    # wide) - that was the root cause of a non-admin user seeing platform-
+    # internal apps like cert-manager. Fixed by removing policy.default
+    # entirely (no global fallback role) as part of this ownership handoff.
+    "create" = false
   } : {}
 }
 
@@ -141,6 +155,62 @@ resource "helm_release" "argocd" {
   timeout = 600
 
   depends_on = [kind_cluster.this]
+}
+
+# Static RBAC baseline for argocd-rbac-cm, owned by Terraform going forward -
+# NOT the argo-cd chart (configs.rbac.create=false above hands this off).
+# teams-operator is the runtime owner of everything else: per-project
+# viewer/maintainer policy blocks, added/updated/removed via a direct
+# read-modify-write of this same ConfigMap's `policy.csv`, delimited per
+# project (`# BEGIN project <name>` / `# END project <name>`) so it never
+# touches this baseline. `ignore_changes = [data]` is what makes that safe -
+# without it, the next `terraform apply` that touches this release (e.g. a
+# chart version bump forcing a helm upgrade) would re-render and overwrite
+# every project's policy back to just this baseline, silently wiping
+# self-service state that lives only in the live cluster.
+#
+# Ordering on the cutover apply (the one that flips argocd_oidc_enabled from
+# false to true, or adds this resource against an already-oidc-enabled
+# release): helm_release.argocd's upgrade deletes the ConfigMap it
+# previously owned first (no longer rendered, once configs.rbac.create is
+# false - standard Helm3 prune-on-upgrade behavior), and depends_on below
+# guarantees this resource's Create only runs after that upgrade completes -
+# so it never conflicts with the chart's own copy.
+#
+# NOTE: same two-pass bootstrap caveat as the rootCA comment above - on a
+# from-scratch cluster's very first apply, set argocd_oidc_enabled=false so
+# the chart creates+owns an initial argocd-rbac-cm the normal way (letting
+# argocd-server start successfully); only on a second apply, with oidc
+# enabled, does ownership hand off to this resource. Applying with oidc
+# enabled from a truly empty cluster on the *first* apply would have
+# argocd-server fail to start (no ConfigMap yet for its volume mount, and
+# this resource - depending on helm_release.argocd - runs too late to help).
+resource "kubernetes_config_map" "argocd_rbac" {
+  count = var.argocd_enabled && var.argocd_oidc_enabled ? 1 : 0
+
+  metadata {
+    name      = "argocd-rbac-cm"
+    namespace = var.argocd_namespace
+    labels = {
+      "app.kubernetes.io/part-of"    = "argocd"
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  data = {
+    # Only var.argocd_admin_group members get role:admin. Deliberately no
+    # policy.default (no global fallback role) - see local.argocd_rbac_config's
+    # comment for why. Per-project viewer/maintainer policy lines are added
+    # below this baseline, at runtime, by teams-operator.
+    "policy.csv" = "g, ${var.argocd_admin_group}, role:admin\n"
+    "scopes"     = "[groups]"
+  }
+
+  lifecycle {
+    ignore_changes = [data]
+  }
+
+  depends_on = [helm_release.argocd]
 }
 
 # Ingress exposing the Argo CD server UI through ingress-nginx at
