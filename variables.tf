@@ -101,6 +101,30 @@ variable "argocd_admin_group" {
   default     = "argocd-admins"
 }
 
+variable "apiserver_oidc_enabled" {
+  description = "Configure kube-apiserver's OIDC authenticator (node-level static-pod edit + oidc-ca.crt) so human Keycloak tokens authenticate against the cluster and `teams-cli`/kubectl OIDC login works. Reuses the same Keycloak issuer as Argo CD (argocd_oidc_issuer_url)."
+  type        = bool
+  default     = true
+}
+
+variable "apiserver_oidc_client_id" {
+  description = "OIDC client id kube-apiserver validates the token `aud` against. `teams-cli` so that only tokens minted by `teams-cli login` authenticate to kubectl (teams-ui browser tokens have a different aud and are correctly rejected)."
+  type        = string
+  default     = "teams-cli"
+}
+
+variable "apiserver_oidc_username_claim" {
+  description = "Token claim kube-apiserver maps to the Kubernetes username. Paired with a `-` username-prefix (hardcoded in the configure script) so plain usernames match teams-operator's RBAC subjects."
+  type        = string
+  default     = "preferred_username"
+}
+
+variable "apiserver_oidc_groups_claim" {
+  description = "Token claim kube-apiserver maps to Kubernetes groups. `groups` gets no prefix, so a token's raw groups match teams-operator's {namespace}-viewer/-maintainer Group RoleBindings directly."
+  type        = string
+  default     = "groups"
+}
+
 variable "argo_rollouts_enabled" {
   description = "Install Argo Rollouts (progressive delivery controller) into the cluster."
   type        = bool
