@@ -8,6 +8,18 @@ resource "kind_cluster" "this" {
     kind        = "Cluster"
     api_version = "kind.x-k8s.io/v1alpha4"
 
+    # Pin the apiserver host address/port so the cluster endpoint is stable
+    # across recreations. Without this, Docker assigns a random host port each
+    # time (e.g. 50655, 58309, ...), which is exactly what makes teams-api's
+    # kubeconfig server URL and any pinned endpoint go stale on every rebuild.
+    # The cluster CA still rotates per recreate, so teams-api-k8s-access still
+    # needs refreshing — but the endpoint no longer moves. See variables
+    # api_server_address / api_server_port.
+    networking {
+      api_server_address = var.api_server_address
+      api_server_port    = var.api_server_port
+    }
+
     # Point containerd at the local registry: images tagged
     # localhost:<port>/... are pulled from the kind-registry container over the
     # shared "kind" docker network. See registry.tf.

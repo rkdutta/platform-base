@@ -21,6 +21,18 @@ variable "worker_count" {
   }
 }
 
+variable "api_server_address" {
+  description = "Host address the kind cluster's kube-apiserver is published on. 127.0.0.1 keeps it local-only."
+  type        = string
+  default     = "127.0.0.1"
+}
+
+variable "api_server_port" {
+  description = "Fixed host port for the kube-apiserver so the cluster endpoint (https://<addr>:<port>) is STABLE across kind recreations, instead of the random Docker-assigned port that makes teams-api's kubeconfig server URL (and any pinned endpoint) go stale on every rebuild. Must be free on the host; 0 reverts to a random port."
+  type        = number
+  default     = 6443
+}
+
 variable "ingress_ready" {
   description = "Label the control-plane node and map host ports so an ingress controller can be installed later."
   type        = bool
