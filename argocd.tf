@@ -159,7 +159,12 @@ resource "helm_release" "argocd" {
   wait    = true
   timeout = 600
 
-  depends_on = [kind_cluster.this]
+  # Also wait for the apiserver OIDC reconfiguration to finish AND the apiserver
+  # to be healthy again (the OIDC step bounces the static pod). Without this,
+  # this helm install races that reload and fails with "cluster unreachable ...
+  # EOF". null_resource.apiserver_oidc's configure script now blocks on
+  # apiserver /livez, so this dependency guarantees a healthy apiserver here.
+  depends_on = [kind_cluster.this, null_resource.apiserver_oidc]
 }
 
 # Static RBAC baseline for argocd-rbac-cm, owned by Terraform going forward -

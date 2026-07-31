@@ -40,6 +40,25 @@ reload_apiserver() {
   mv /tmp/kube-apiserver.yaml.reload "$MANIFEST"
 }
 
+# Wait until the apiserver is serving again after a static-pod recreation.
+# Editing the manifest bounces the apiserver (~seconds of downtime); without
+# this wait the resource "completes" while the apiserver is still down, and any
+# Terraform resource ordered after it (the helm releases) races the outage and
+# fails with "Kubernetes cluster unreachable ... EOF". Poll the local secure
+# port's /livez (open, no auth needed) until it responds, up to ~60s.
+wait_for_apiserver() {
+  i=0
+  until curl -sk -o /dev/null --max-time 2 "https://127.0.0.1:6443/livez"; do
+    i=$((i + 1))
+    if [ "$i" -ge 30 ]; then
+      echo ">> WARNING: apiserver did not report healthy within ~60s" >&2
+      return 0
+    fi
+    sleep 2
+  done
+  echo ">> apiserver is serving again (/livez OK)"
+}
+
 if grep -q -- '--oidc-issuer-url=' "$MANIFEST"; then
   echo ">> OIDC flags already present — reloading apiserver to pick up the current oidc-ca.crt"
   reload_apiserver
@@ -55,3 +74,7 @@ else
   mv "$tmp" "$MANIFEST"
   echo ">> OIDC flags added; kubelet will recreate the apiserver static pod"
 fi
+
+# Don't return control to Terraform until the apiserver is back — so downstream
+# helm releases (which depend_on this resource) never race the reload outage.
+wait_for_apiserver

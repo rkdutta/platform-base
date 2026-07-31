@@ -36,9 +36,21 @@ resource "tls_self_signed_cert" "platform_tls" {
 
   validity_period_hours = 825 * 24 # 825 days, matching the prior -days 825
 
+  # Mark the cert as a CA (basicConstraints CA:TRUE + keyCertSign). This is a
+  # self-signed wildcard used BOTH as the server cert everywhere AND as its own
+  # trust anchor by clients that pin it: containerd, OpenBao's
+  # oidc_discovery_ca_pem, teams-api's KEYCLOAK_CA_CERT, and — critically —
+  # `kubectl oidc-login` verifying Keycloak's TLS. Go's x509 verifier refuses to
+  # treat a CA:FALSE leaf as a trust anchor ("parent certificate cannot sign
+  # this kind of certificate"), which broke every OIDC login until this was set.
+  # Server usage (server_auth EKU) is retained, so it still works as the leaf.
+  is_ca_certificate = true
+
   allowed_uses = [
     "key_encipherment",
     "digital_signature",
+    "cert_signing",
+    "crl_signing",
     "server_auth",
   ]
 }

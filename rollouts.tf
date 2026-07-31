@@ -24,7 +24,10 @@ resource "helm_release" "argo_rollouts" {
   wait    = true
   timeout = 600
 
-  depends_on = [kind_cluster.this]
+  # Wait for the apiserver OIDC reconfiguration (which bounces the static pod)
+  # to finish and the apiserver to be healthy again, so this helm install never
+  # races that reload's EOF. See null_resource.apiserver_oidc / argocd.tf.
+  depends_on = [kind_cluster.this, null_resource.apiserver_oidc]
 }
 
 # Ingress exposing the Argo Rollouts dashboard through ingress-nginx at
