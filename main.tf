@@ -45,10 +45,19 @@ resource "kind_cluster" "this" {
       ] : []
 
       # Expose host ports into the cluster for an ingress controller.
+      # The extra 443->443 mapping (alongside 443->8443) lets in-cluster
+      # clients reach the ingress on the DEFAULT https port via
+      # host.docker.internal — needed for Harbor: containerd pulls
+      # harbor.127.0.0.1.sslip.io/... (port 443) and then follows Harbor's
+      # token realm to :8443, and the node routes that host to
+      # host.docker.internal (see node-hosts/platform-hosts-fix.sh), so BOTH
+      # host ports must forward to the ingress. Same hairpin the apiserver
+      # already uses to reach Keycloak on :8443.
       dynamic "extra_port_mappings" {
         for_each = var.ingress_ready ? [
           { container = 80, host = var.ingress_http_host_port },
           { container = 443, host = var.ingress_https_host_port },
+          { container = 443, host = var.harbor_registry_host_port },
         ] : []
         content {
           container_port = extra_port_mappings.value.container

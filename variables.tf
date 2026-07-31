@@ -33,6 +33,12 @@ variable "api_server_port" {
   default     = 6443
 }
 
+variable "harbor_registry_host_port" {
+  description = "Extra host port mapped to the ingress controller's container port 443 (in addition to ingress_https_host_port). Kept at the default HTTPS port 443 so in-cluster clients reaching harbor.127.0.0.1.sslip.io via host.docker.internal can pull images on the default port AND follow Harbor's :8443 token realm — both must hairpin through the host to the ingress. See node-hosts/platform-hosts-fix.sh."
+  type        = number
+  default     = 443
+}
+
 variable "ingress_ready" {
   description = "Label the control-plane node and map host ports so an ingress controller can be installed later."
   type        = bool
