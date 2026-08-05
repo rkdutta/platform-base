@@ -72,10 +72,12 @@ exec` step needed for any of them anymore:
   containerd can pull from Harbor). Docker regenerates node `/etc/hosts` on
   every container restart, which used to silently break both OIDC login
   (401, apiserver logs `dial tcp 127.0.0.1:8443: connection refused`) and
-  Harbor pulls after every restart — fixed at the source now. The Harbor
-  target IP is the ingress ClusterIP, pinned via
-  `apps/resource/ingress-nginx` (`controller.service.clusterIP`) in
-  `platform-infra` to match the value hardcoded in the unit.
+  Harbor pulls after every restart — fixed at the source now. Both entries
+  route via `host.docker.internal` (resolved fresh at boot), which forwards
+  through the host-level Docker port maps (`main.tf`'s `extra_port_mappings`)
+  back to the ingress — not the in-cluster ClusterIP (an older mechanism;
+  the ClusterIP pin still present in `platform-infra`'s
+  `apps/resource/ingress-nginx` config is now vestigial for this purpose).
 - **`node-containerd-trust.tf`** — pushes the `platform-tls` CA into each
   node's trust store and reloads containerd, so image pulls from Harbor
   don't hit "x509: certificate signed by unknown authority".
